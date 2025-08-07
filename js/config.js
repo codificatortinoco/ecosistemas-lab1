@@ -21,10 +21,11 @@ const CONFIG = {
     },
 
     UI: {
-        defaultLimit: 10,
+        defaultLimit: 5,
         maxLimit: 50,
         animationDuration: 300,
-        spinnerSize: 40
+        spinnerSize: 40,
+        userChunkSize: 5
     },
 
     POKEMON_TYPES: {

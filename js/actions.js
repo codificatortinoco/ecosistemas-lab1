@@ -107,16 +107,43 @@ class ApiActions {
 
     // Users
     async loadUsers(limit = 10, filter = '') {
-        let url = `${this.config.API.base}${this.config.API.endpoints.users}?results=${limit}`;
-        if (filter) url += `&gender=${filter}`;
-        await this.fetchData({
-            url,
-            loadingType: this.config.ACTIONS.LOADING,
-            successType: this.config.ACTIONS.SUCCESS,
-            errorType: this.config.ACTIONS.ERROR,
-            emptyType: this.config.ACTIONS.EMPTY,
-            processData: (data) => data.results || [],
-        });
+        this.dispatch({ type: this.config.ACTIONS.LOADING });
+        try {
+            // Split the request into smaller chunks for faster initial load
+            const chunkSize = 5;
+            const chunks = Math.ceil(limit / chunkSize);
+            let allUsers = [];
+
+            for (let i = 0; i < chunks; i++) {
+                const currentChunkSize = Math.min(chunkSize, limit - (i * chunkSize));
+                let url = `${this.config.API.base}${this.config.API.endpoints.users}?results=${currentChunkSize}`;
+                if (filter) url += `&gender=${filter}`;
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to fetch users');
+                const data = await response.json();
+                
+                const newUsers = data.results || [];
+                allUsers = [...allUsers, ...newUsers];
+                
+                // Dispatch a success action for each chunk to show progress
+                if (allUsers.length > 0) {
+                    this.dispatch({
+                        type: this.config.ACTIONS.SUCCESS,
+                        payload: allUsers
+                    });
+                }
+            }
+
+            if (allUsers.length === 0) {
+                this.dispatch({ type: this.config.ACTIONS.EMPTY });
+            }
+        } catch (error) {
+            this.dispatch({
+                type: this.config.ACTIONS.ERROR,
+                payload: error.message
+            });
+        }
     }
     async loadSingleUser() {
         const url = `${this.config.API.base}${this.config.API.endpoints.users}?results=1`;
