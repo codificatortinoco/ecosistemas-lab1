@@ -111,7 +111,8 @@ class View {
             if (action === 'search') {
                 this.handleSearch();
             } else if (action === 'random') {
-                this.actions.loadRandomPokemon();
+                const count = this.getCountValue();
+                this.actions.loadMultipleRandomPokemon(count);
             }
         } else if (this.moduleName === 'anime') {
             if (action === 'search') {
@@ -148,6 +149,11 @@ class View {
     getLimitValue() {
         const limitInput = this.moduleElement.querySelector('.limit-input');
         return limitInput ? parseInt(limitInput.value) : CONFIG.UI.defaultLimit;
+    }
+
+    getCountValue() {
+        const countInput = this.moduleElement.querySelector('[data-action="count"]');
+        return countInput ? parseInt(countInput.value) : 5;
     }
 
     renderCards(data) {

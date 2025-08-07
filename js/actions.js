@@ -41,6 +41,7 @@ class ApiActions {
             processData: (pokemon) => [pokemon],
         });
     }
+    
     async loadRandomPokemon() {
         const randomId = Math.floor(Math.random() * 151) + 1;
         const url = `${this.config.API.base}${this.config.API.endpoints.pokemon}/${randomId}`;
@@ -52,6 +53,38 @@ class ApiActions {
             emptyType: this.config.ACTIONS.EMPTY,
             processData: (pokemon) => [pokemon],
         });
+    }
+
+    async loadMultipleRandomPokemon(count = 5) {
+        this.dispatch({ type: this.config.ACTIONS.LOADING });
+        
+        try {
+            const pokemonPromises = [];
+            const usedIds = new Set();
+            
+            // Generate unique random IDs
+            for (let i = 0; i < count; i++) {
+                let randomId;
+                do {
+                    randomId = Math.floor(Math.random() * 151) + 1;
+                } while (usedIds.has(randomId));
+                usedIds.add(randomId);
+                
+                const url = `${this.config.API.base}${this.config.API.endpoints.pokemon}/${randomId}`;
+                pokemonPromises.push(fetch(url).then(res => res.json()));
+            }
+            
+            const pokemonList = await Promise.all(pokemonPromises);
+            this.dispatch({
+                type: this.config.ACTIONS.SUCCESS,
+                payload: pokemonList
+            });
+        } catch (error) {
+            this.dispatch({
+                type: this.config.ACTIONS.ERROR,
+                payload: error.message
+            });
+        }
     }
 
     // Anime

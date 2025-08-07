@@ -28,7 +28,7 @@ class App {
 
     loadInitialData() {
         setTimeout(() => {
-            this.actions.pokemon.loadRandomPokemon();
+            this.actions.pokemon.loadMultipleRandomPokemon(5);
         }, 1000);
     }
 }
