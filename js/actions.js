@@ -25,12 +25,71 @@ class ApiActions {
         }
     }
 
-    // Pokemon
-    async searchPokemon(searchTerm) {
-        if (!searchTerm.trim()) {
+    async fetchMultiple(urls, processData) {
+        this.dispatch({ type: this.config.ACTIONS.LOADING });
+        try {
+            const promises = urls.map(url => fetch(url).then(res => res.json()));
+            const results = await Promise.all(promises);
+            const processed = processData ? processData(results) : results;
+            this.dispatch({
+                type: this.config.ACTIONS.SUCCESS,
+                payload: processed
+            });
+        } catch (error) {
+            this.dispatch({
+                type: this.config.ACTIONS.ERROR,
+                payload: error.message
+            });
+        }
+    }
+
+    // Generic search method
+    async search(searchTerm, endpoint, params = {}) {
+        if (!searchTerm?.trim()) {
             this.dispatch({ type: this.config.ACTIONS.EMPTY });
             return;
         }
+        
+        const url = new URL(`${this.config.API.base}${endpoint}`);
+        url.searchParams.set('q', searchTerm);
+        Object.entries(params).forEach(([key, value]) => {
+            if (value) url.searchParams.set(key, value);
+        });
+        
+        await this.fetchData({
+            url: url.toString(),
+            loadingType: this.config.ACTIONS.LOADING,
+            successType: this.config.ACTIONS.SUCCESS,
+            errorType: this.config.ACTIONS.ERROR,
+            emptyType: this.config.ACTIONS.EMPTY,
+            processData: (data) => data.data || data,
+        });
+    }
+
+    // Generic load method
+    async load(endpoint, params = {}, processData) {
+        const url = new URL(`${this.config.API.base}${endpoint}`);
+        Object.entries(params).forEach(([key, value]) => {
+            if (value) url.searchParams.set(key, value);
+        });
+        
+        await this.fetchData({
+            url: url.toString(),
+            loadingType: this.config.ACTIONS.LOADING,
+            successType: this.config.ACTIONS.SUCCESS,
+            errorType: this.config.ACTIONS.ERROR,
+            emptyType: this.config.ACTIONS.EMPTY,
+            processData,
+        });
+    }
+
+    // Pokemon methods
+    async searchPokemon(searchTerm) {
+        if (!searchTerm?.trim()) {
+            this.dispatch({ type: this.config.ACTIONS.EMPTY });
+            return;
+        }
+        
         const url = `${this.config.API.base}${this.config.API.endpoints.pokemon}/${searchTerm.toLowerCase()}`;
         await this.fetchData({
             url,
@@ -44,153 +103,49 @@ class ApiActions {
     
     async loadRandomPokemon() {
         const randomId = Math.floor(Math.random() * 151) + 1;
-        const url = `${this.config.API.base}${this.config.API.endpoints.pokemon}/${randomId}`;
-        await this.fetchData({
-            url,
-            loadingType: this.config.ACTIONS.LOADING,
-            successType: this.config.ACTIONS.SUCCESS,
-            errorType: this.config.ACTIONS.ERROR,
-            emptyType: this.config.ACTIONS.EMPTY,
-            processData: (pokemon) => [pokemon],
-        });
+        await this.load(`${this.config.API.endpoints.pokemon}/${randomId}`, {}, (pokemon) => [pokemon]);
     }
 
     async loadMultipleRandomPokemon(count = 5) {
-        this.dispatch({ type: this.config.ACTIONS.LOADING });
+        const usedIds = new Set();
+        const urls = [];
         
-        try {
-            const pokemonPromises = [];
-            const usedIds = new Set();
-            
-            // Generate unique random IDs
-            for (let i = 0; i < count; i++) {
-                let randomId;
-                do {
-                    randomId = Math.floor(Math.random() * 151) + 1;
-                } while (usedIds.has(randomId));
+        while (urls.length < count) {
+            const randomId = Math.floor(Math.random() * 151) + 1;
+            if (!usedIds.has(randomId)) {
                 usedIds.add(randomId);
-                
-                const url = `${this.config.API.base}${this.config.API.endpoints.pokemon}/${randomId}`;
-                pokemonPromises.push(fetch(url).then(res => res.json()));
+                urls.push(`${this.config.API.base}${this.config.API.endpoints.pokemon}/${randomId}`);
             }
-            
-            const pokemonList = await Promise.all(pokemonPromises);
-            this.dispatch({
-                type: this.config.ACTIONS.SUCCESS,
-                payload: pokemonList
-            });
-        } catch (error) {
-            this.dispatch({
-                type: this.config.ACTIONS.ERROR,
-                payload: error.message
-            });
         }
+        
+        await this.fetchMultiple(urls);
     }
 
-    // Anime
+    // Anime methods
     async searchAnime(searchTerm, filter = '', limit = 10) {
-        if (!searchTerm.trim()) {
-            this.dispatch({ type: this.config.ACTIONS.EMPTY });
-            return;
-        }
-        let url = `${this.config.API.base}${this.config.API.endpoints.search}?q=${encodeURIComponent(searchTerm)}&limit=${limit}`;
-        if (filter) url += `&type=${filter}`;
-        await this.fetchData({
-            url,
-            loadingType: this.config.ACTIONS.LOADING,
-            successType: this.config.ACTIONS.SUCCESS,
-            errorType: this.config.ACTIONS.ERROR,
-            emptyType: this.config.ACTIONS.EMPTY,
-            processData: (data) => data.data || [],
-        });
+        await this.search(searchTerm, this.config.API.endpoints.search, { limit, type: filter });
     }
 
-    // Users
+    // Users methods
     async loadUsers(limit = 10, filter = '') {
-        this.dispatch({ type: this.config.ACTIONS.LOADING });
-        try {
-            // Split the request into smaller chunks for faster initial load
-            const chunkSize = 5;
-            const chunks = Math.ceil(limit / chunkSize);
-            let allUsers = [];
-
-            for (let i = 0; i < chunks; i++) {
-                const currentChunkSize = Math.min(chunkSize, limit - (i * chunkSize));
-                let url = `${this.config.API.base}${this.config.API.endpoints.users}?results=${currentChunkSize}`;
-                if (filter) url += `&gender=${filter}`;
-
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Failed to fetch users');
-                const data = await response.json();
-                
-                const newUsers = data.results || [];
-                allUsers = [...allUsers, ...newUsers];
-                
-                // Dispatch a success action for each chunk to show progress
-                if (allUsers.length > 0) {
-                    this.dispatch({
-                        type: this.config.ACTIONS.SUCCESS,
-                        payload: allUsers
-                    });
-                }
-            }
-
-            if (allUsers.length === 0) {
-                this.dispatch({ type: this.config.ACTIONS.EMPTY });
-            }
-        } catch (error) {
-            this.dispatch({
-                type: this.config.ACTIONS.ERROR,
-                payload: error.message
-            });
-        }
+        const params = { results: limit };
+        if (filter) params.gender = filter;
+        await this.load(this.config.API.endpoints.users, params, (data) => data.results || []);
     }
+
     async loadSingleUser() {
-        const url = `${this.config.API.base}${this.config.API.endpoints.users}?results=1`;
-        await this.fetchData({
-            url,
-            loadingType: this.config.ACTIONS.LOADING,
-            successType: this.config.ACTIONS.SUCCESS,
-            errorType: this.config.ACTIONS.ERROR,
-            emptyType: this.config.ACTIONS.EMPTY,
-            processData: (data) => data.results || [],
-        });
+        await this.load(this.config.API.endpoints.users, { results: 1 }, (data) => data.results || []);
     }
 
-    // Jokes
+    // Jokes methods
     async loadJokes(limit = 5) {
-        this.dispatch({ type: this.config.ACTIONS.LOADING });
-        try {
-            const jokePromises = [];
-            
-            // Fetch multiple random jokes
-            for (let i = 0; i < limit; i++) {
-                const url = `${this.config.API.base}${this.config.API.endpoints.random}?safe-mode`;
-                jokePromises.push(fetch(url).then(res => res.json()));
-            }
-            
-            const jokesList = await Promise.all(jokePromises);
-            this.dispatch({
-                type: this.config.ACTIONS.SUCCESS,
-                payload: jokesList
-            });
-        } catch (error) {
-            this.dispatch({
-                type: this.config.ACTIONS.ERROR,
-                payload: error.message
-            });
-        }
+        const urls = Array(limit).fill().map(() => 
+            `${this.config.API.base}${this.config.API.endpoints.random}?safe-mode`
+        );
+        await this.fetchMultiple(urls);
     }
 
     async loadSingleJoke() {
-        const url = `${this.config.API.base}${this.config.API.endpoints.random}?safe-mode`;
-        await this.fetchData({
-            url,
-            loadingType: this.config.ACTIONS.LOADING,
-            successType: this.config.ACTIONS.SUCCESS,
-            errorType: this.config.ACTIONS.ERROR,
-            emptyType: this.config.ACTIONS.EMPTY,
-            processData: (joke) => [joke],
-        });
+        await this.load(this.config.API.endpoints.random, { 'safe-mode': '' }, (joke) => [joke]);
     }
 } 

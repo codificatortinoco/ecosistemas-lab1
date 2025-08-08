@@ -1,6 +1,6 @@
 class DataStore {
     constructor(initialState, actionTypes, dataKey) {
-        this.state = initialState;
+        this.state = { ...initialState };
         this.listeners = [];
         this.actionTypes = actionTypes;
         this.dataKey = dataKey;
@@ -22,54 +22,43 @@ class DataStore {
     }
 
     handleAction(action) {
-        switch (action.type) {
-            case this.actionTypes.LOADING:
-                this.state.loading = true;
-                this.state.error = null;
-                if (action.payload) {
-                    Object.assign(this.state, action.payload);
-                }
+        const { type, payload } = action;
+        const { LOADING, SUCCESS, ERROR, EMPTY } = this.actionTypes;
+
+        switch (type) {
+            case LOADING:
+                this.updateState({ loading: true, error: null, ...payload });
                 break;
-            case this.actionTypes.SUCCESS:
-                this.state[this.dataKey] = action.payload;
-                this.state.loading = false;
-                this.state.error = null;
+            case SUCCESS:
+                this.updateState({ [this.dataKey]: payload, loading: false, error: null });
                 break;
-            case this.actionTypes.ERROR:
-                this.state.error = action.payload;
-                this.state.loading = false;
-                this.state[this.dataKey] = [];
+            case ERROR:
+                this.updateState({ error: payload, loading: false, [this.dataKey]: [] });
                 break;
-            case this.actionTypes.EMPTY:
-                this.state[this.dataKey] = [];
-                this.state.loading = false;
-                this.state.error = null;
+            case EMPTY:
+                this.updateState({ [this.dataKey]: [], loading: false, error: null });
                 break;
         }
+    }
+
+    updateState(updates) {
+        this.state = { ...this.state, ...updates };
         this.emit();
     }
 }
 
-const pokemonStore = new DataStore(
-    { pokemon: [], loading: false, error: null, searchTerm: '' },
-    CONFIG.ACTIONS.POKEMON,
-    'pokemon'
-);
+// Create stores with consistent initial state
+const createStore = (actionTypes, dataKey, additionalState = {}) => {
+    const initialState = {
+        [dataKey]: [],
+        loading: false,
+        error: null,
+        ...additionalState
+    };
+    return new DataStore(initialState, actionTypes, dataKey);
+};
 
-const animeStore = new DataStore(
-    { anime: [], loading: false, error: null, searchTerm: '', filter: '', limit: CONFIG.UI.defaultLimit },
-    CONFIG.ACTIONS.ANIME,
-    'anime'
-);
-
-const usersStore = new DataStore(
-    { users: [], loading: false, error: null, limit: CONFIG.UI.defaultLimit, filter: '' },
-    CONFIG.ACTIONS.USERS,
-    'users'
-);
-
-const jokesStore = new DataStore(
-    { jokes: [], loading: false, error: null, limit: CONFIG.UI.defaultLimit },
-    CONFIG.ACTIONS.JOKES,
-    'jokes'
-); 
+const pokemonStore = createStore(CONFIG.ACTIONS.POKEMON, 'pokemon', { searchTerm: '' });
+const animeStore = createStore(CONFIG.ACTIONS.ANIME, 'anime', { searchTerm: '', filter: '', limit: CONFIG.UI.defaultLimit });
+const usersStore = createStore(CONFIG.ACTIONS.USERS, 'users', { limit: CONFIG.UI.defaultLimit, filter: '' });
+const jokesStore = createStore(CONFIG.ACTIONS.JOKES, 'jokes', { limit: CONFIG.UI.defaultLimit }); 

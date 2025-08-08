@@ -29,10 +29,14 @@ class Dispatcher {
             this.pendingPayload = null;
         }
     }
+
+    registerStore(store) {
+        return this.register(action => store.handleAction(action));
+    }
 }
 
 const dispatcher = new Dispatcher();
-dispatcher.register(action => pokemonStore.handleAction(action));
-dispatcher.register(action => animeStore.handleAction(action));
-dispatcher.register(action => usersStore.handleAction(action));
-dispatcher.register(action => jokesStore.handleAction(action)); 
+
+// Register all stores
+const stores = [pokemonStore, animeStore, usersStore, jokesStore];
+stores.forEach(store => dispatcher.registerStore(store)); 

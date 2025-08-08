@@ -6,50 +6,72 @@ class View {
         this.moduleElement = document.querySelector(`[data-module="${moduleName}"]`);
         this.resultsElement = this.moduleElement.querySelector('[data-results]');
         
+        this.actionHandlers = this.createActionHandlers();
+        this.cardRenderers = this.createCardRenderers();
+        
         this.bindEvents();
         this.subscribeToStore();
+    }
+
+    createActionHandlers() {
+        return {
+            pokemon: {
+                search: () => this.actions.searchPokemon(this.getSearchValue()),
+                random: () => this.actions.loadMultipleRandomPokemon(this.getCountValue())
+            },
+            anime: {
+                search: () => this.actions.searchAnime(this.getSearchValue(), this.getFilterValue(), this.getLimitValue())
+            },
+            users: {
+                load: () => this.actions.loadUsers(this.getLimitValue(), this.getFilterValue()),
+                single: () => this.actions.loadSingleUser()
+            },
+            jokes: {
+                load: () => this.actions.loadJokes(this.getLimitValue()),
+                single: () => this.actions.loadSingleJoke()
+            }
+        };
+    }
+
+    createCardRenderers() {
+        return {
+            pokemon: this.renderPokemonCards.bind(this),
+            anime: this.renderAnimeCards.bind(this),
+            users: this.renderUserCards.bind(this),
+            jokes: this.renderJokeCards.bind(this)
+        };
     }
 
     bindEvents() {
         const controls = this.moduleElement.querySelector('.module-controls');
         
+        // Bind search input
         const searchInput = controls.querySelector('.search-input');
         if (searchInput) {
             searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.handleSearch();
-                }
+                if (e.key === 'Enter') this.handleSearch();
             });
         }
 
-        const buttons = controls.querySelectorAll('[data-action]');
-        buttons.forEach(button => {
+        // Bind buttons
+        controls.querySelectorAll('[data-action]').forEach(button => {
             button.addEventListener('click', (e) => {
                 const action = e.target.dataset.action;
                 this.handleAction(action);
             });
         });
 
-        const filterSelect = controls.querySelector('.filter-select');
-        const limitInput = controls.querySelector('.limit-input');
-        
-        if (filterSelect) {
-            filterSelect.addEventListener('change', () => {
-                this.handleFilterChange();
-            });
-        }
-        
-        if (limitInput) {
-            limitInput.addEventListener('change', () => {
-                this.handleLimitChange();
-            });
-        }
+        // Bind form controls
+        ['filter-select', 'limit-input'].forEach(selector => {
+            const element = controls.querySelector(`.${selector}`);
+            if (element) {
+                element.addEventListener('change', () => this.handleFormChange());
+            }
+        });
     }
 
     subscribeToStore() {
-        this.store.subscribe((state) => {
-            this.render(state);
-        });
+        this.store.subscribe((state) => this.render(state));
     }
 
     render(state) {
@@ -58,125 +80,72 @@ class View {
     }
 
     updateState(state) {
-        const loadingEl = this.moduleElement.querySelector('.state-loading');
-        const errorEl = this.moduleElement.querySelector('.state-error');
-        const emptyEl = this.moduleElement.querySelector('.state-empty');
-
-        loadingEl.style.display = 'none';
-        errorEl.style.display = 'none';
-        emptyEl.style.display = 'none';
+        const states = ['loading', 'error', 'empty'];
+        states.forEach(stateType => {
+            const element = this.moduleElement.querySelector(`.state-${stateType}`);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
 
         if (state.loading) {
-            loadingEl.style.display = 'block';
+            this.moduleElement.querySelector('.state-loading').style.display = 'block';
         } else if (state.error) {
-            errorEl.style.display = 'block';
+            this.moduleElement.querySelector('.state-error').style.display = 'block';
         } else if (!state[this.getDataKey()] || state[this.getDataKey()].length === 0) {
-            emptyEl.style.display = 'block';
+            this.moduleElement.querySelector('.state-empty').style.display = 'block';
         }
     }
 
     renderResults(state) {
         const data = state[this.getDataKey()];
-        if (data && data.length > 0) {
-            this.resultsElement.innerHTML = this.renderCards(data);
-        } else {
-            this.resultsElement.innerHTML = '';
-        }
+        this.resultsElement.innerHTML = data?.length > 0 ? this.renderCards(data) : '';
     }
 
     getDataKey() {
-        const keys = {
-            'pokemon': 'pokemon',
-            'anime': 'anime',
-            'users': 'users',
-            'jokes': 'jokes'
-        };
-        return keys[this.moduleName];
+        const dataKeys = { pokemon: 'pokemon', anime: 'anime', users: 'users', jokes: 'jokes' };
+        return dataKeys[this.moduleName];
     }
 
     handleSearch() {
-        const searchInput = this.moduleElement.querySelector('.search-input');
-        const searchTerm = searchInput.value.trim();
-        
-        if (this.moduleName === 'pokemon') {
-            this.actions.searchPokemon(searchTerm);
-        } else if (this.moduleName === 'anime') {
-            const filter = this.getFilterValue();
-            const limit = this.getLimitValue();
-            this.actions.searchAnime(searchTerm, filter, limit);
-        }
+        const handlers = this.actionHandlers[this.moduleName];
+        if (handlers?.search) handlers.search();
     }
 
     handleAction(action) {
-        if (this.moduleName === 'pokemon') {
-            if (action === 'search') {
-                this.handleSearch();
-            } else if (action === 'random') {
-                const count = this.getCountValue();
-                this.actions.loadMultipleRandomPokemon(count);
-            }
-        } else if (this.moduleName === 'anime') {
-            if (action === 'search') {
-                this.handleSearch();
-            }
-        } else if (this.moduleName === 'users') {
-            if (action === 'load') {
-                const limit = this.getLimitValue();
-                const filter = this.getFilterValue();
-                this.actions.loadUsers(limit, filter);
-            } else if (action === 'single') {
-                this.actions.loadSingleUser();
-            }
-        } else if (this.moduleName === 'jokes') {
-            if (action === 'load') {
-                const limit = this.getLimitValue();
-                this.actions.loadJokes(limit);
-            } else if (action === 'single') {
-                this.actions.loadSingleJoke();
-            }
-        }
+        const handlers = this.actionHandlers[this.moduleName];
+        if (handlers?.[action]) handlers[action]();
     }
 
-    handleFilterChange() {
-        if (this.moduleName === 'anime' || this.moduleName === 'users') {
+    handleFormChange() {
+        if (['anime', 'users'].includes(this.moduleName)) {
             this.handleSearch();
         }
     }
 
-    handleLimitChange() {
-        if (this.moduleName === 'anime' || this.moduleName === 'users') {
-            this.handleSearch();
-        }
+    getSearchValue() {
+        const input = this.moduleElement.querySelector('.search-input');
+        return input?.value?.trim() || '';
     }
 
     getFilterValue() {
-        const filterSelect = this.moduleElement.querySelector('.filter-select');
-        return filterSelect ? filterSelect.value : '';
+        const select = this.moduleElement.querySelector('.filter-select');
+        return select?.value || '';
     }
 
     getLimitValue() {
-        const limitInput = this.moduleElement.querySelector('.limit-input');
-        return limitInput ? parseInt(limitInput.value) : CONFIG.UI.defaultLimit;
+        const input = this.moduleElement.querySelector('.limit-input');
+        return input ? parseInt(input.value) : CONFIG.UI.defaultLimit;
     }
 
     getCountValue() {
-        const countInput = this.moduleElement.querySelector('[data-action="count"]');
-        return countInput ? parseInt(countInput.value) : 5;
+        const input = this.moduleElement.querySelector('.limit-input');
+        return input ? parseInt(input.value) : 5;
     }
 
     renderCards(data) {
-        switch (this.moduleName) {
-            case 'pokemon':
-                return this.renderPokemonCards(data);
-            case 'anime':
-                return this.renderAnimeCards(data);
-            case 'users':
-                return this.renderUserCards(data);
-            case 'jokes':
-                return this.renderJokeCards(data);
-            default:
-                return '';
-        }
+        const renderer = this.cardRenderers[this.moduleName];
+        return renderer ? renderer(data) : '';
     }
 
     renderPokemonCards(pokemonList) {
@@ -236,24 +205,21 @@ class View {
 
     renderJokeCards(jokes) {
         return jokes.map(joke => {
-            let jokeContent = '';
-            if (joke.type === 'single') {
-                jokeContent = `<p>${joke.joke}</p>`;
-            } else if (joke.type === 'twopart') {
-                jokeContent = `
-                    <p><strong>Setup:</strong> ${joke.setup}</p>
-                    <p><strong>Delivery:</strong> ${joke.delivery}</p>
-                `;
-            }
+            const jokeContent = joke.type === 'single' 
+                ? `<p>${joke.joke}</p>`
+                : `<p><strong>Setup:</strong> ${joke.setup}</p><p><strong>Delivery:</strong> ${joke.delivery}</p>`;
+            
+            const flags = joke.flags ? Object.entries(joke.flags)
+                .filter(([, value]) => value)
+                .map(([key]) => `<span class="joke-flag">${key.toUpperCase()}</span>`)
+                .join('') : '';
             
             return `
                 <div class="card joke-card">
                     ${jokeContent}
                     <div class="joke-meta">
                         <span class="joke-category">${joke.category}</span>
-                        ${joke.flags && joke.flags.nsfw ? '<span class="joke-flag">NSFW</span>' : ''}
-                        ${joke.flags && joke.flags.religious ? '<span class="joke-flag">Religious</span>' : ''}
-                        ${joke.flags && joke.flags.political ? '<span class="joke-flag">Political</span>' : ''}
+                        ${flags}
                     </div>
                 </div>
             `;
