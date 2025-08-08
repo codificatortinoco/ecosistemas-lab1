@@ -106,6 +106,31 @@
                     <div class="results-grid" data-results></div>
                 </div>
             </section>
+
+            <!-- Jokes Module -->
+            <section class="module" data-module="jokes">
+                <div class="module-header">
+                    <h2>😄 Random Jokes</h2>
+                    <div class="module-controls">
+                        <input type="number" class="limit-input" placeholder="Number of jokes (1-10)" min="1" max="10" value="5" data-action="limit">
+                        <button class="btn btn-primary" data-action="load">Get Jokes</button>
+                        <button class="btn btn-secondary" data-action="single">Single Joke</button>
+                    </div>
+                </div>
+                <div class="module-content">
+                    <div class="state-loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Fetching jokes...</p>
+                    </div>
+                    <div class="state-error" style="display: none;">
+                        <p>❌ Error loading jokes</p>
+                    </div>
+                    <div class="state-empty" style="display: none;">
+                        <p>🔍 Click "Get Jokes" to load random jokes!</p>
+                    </div>
+                    <div class="results-grid" data-results></div>
+                </div>
+            </section>
         </main>
     </div>
 

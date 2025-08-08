@@ -17,6 +17,13 @@ const CONFIG = {
             endpoints: {
                 users: '/'
             }
+        },
+        JOKES: {
+            base: 'https://v2.jokeapi.dev/joke',
+            endpoints: {
+                random: '/Any',
+                categories: '/categories'
+            }
         }
     },
 
@@ -59,6 +66,14 @@ const CONFIG = {
             SUCCESS: 'USERS_SUCCESS',
             ERROR: 'USERS_ERROR',
             EMPTY: 'USERS_EMPTY'
+        },
+        JOKES: {
+            LOAD: 'JOKES_LOAD',
+            SINGLE: 'JOKES_SINGLE',
+            LOADING: 'JOKES_LOADING',
+            SUCCESS: 'JOKES_SUCCESS',
+            ERROR: 'JOKES_ERROR',
+            EMPTY: 'JOKES_EMPTY'
         }
     }
 }; 

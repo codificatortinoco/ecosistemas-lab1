@@ -66,4 +66,10 @@ const usersStore = new DataStore(
     { users: [], loading: false, error: null, limit: CONFIG.UI.defaultLimit, filter: '' },
     CONFIG.ACTIONS.USERS,
     'users'
+);
+
+const jokesStore = new DataStore(
+    { jokes: [], loading: false, error: null, limit: CONFIG.UI.defaultLimit },
+    CONFIG.ACTIONS.JOKES,
+    'jokes'
 ); 

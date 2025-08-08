@@ -156,4 +156,41 @@ class ApiActions {
             processData: (data) => data.results || [],
         });
     }
+
+    // Jokes
+    async loadJokes(limit = 5) {
+        this.dispatch({ type: this.config.ACTIONS.LOADING });
+        try {
+            const jokePromises = [];
+            
+            // Fetch multiple random jokes
+            for (let i = 0; i < limit; i++) {
+                const url = `${this.config.API.base}${this.config.API.endpoints.random}?safe-mode`;
+                jokePromises.push(fetch(url).then(res => res.json()));
+            }
+            
+            const jokesList = await Promise.all(jokePromises);
+            this.dispatch({
+                type: this.config.ACTIONS.SUCCESS,
+                payload: jokesList
+            });
+        } catch (error) {
+            this.dispatch({
+                type: this.config.ACTIONS.ERROR,
+                payload: error.message
+            });
+        }
+    }
+
+    async loadSingleJoke() {
+        const url = `${this.config.API.base}${this.config.API.endpoints.random}?safe-mode`;
+        await this.fetchData({
+            url,
+            loadingType: this.config.ACTIONS.LOADING,
+            successType: this.config.ACTIONS.SUCCESS,
+            errorType: this.config.ACTIONS.ERROR,
+            emptyType: this.config.ACTIONS.EMPTY,
+            processData: (joke) => [joke],
+        });
+    }
 } 

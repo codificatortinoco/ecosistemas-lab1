@@ -88,7 +88,8 @@ class View {
         const keys = {
             'pokemon': 'pokemon',
             'anime': 'anime',
-            'users': 'users'
+            'users': 'users',
+            'jokes': 'jokes'
         };
         return keys[this.moduleName];
     }
@@ -125,6 +126,13 @@ class View {
                 this.actions.loadUsers(limit, filter);
             } else if (action === 'single') {
                 this.actions.loadSingleUser();
+            }
+        } else if (this.moduleName === 'jokes') {
+            if (action === 'load') {
+                const limit = this.getLimitValue();
+                this.actions.loadJokes(limit);
+            } else if (action === 'single') {
+                this.actions.loadSingleJoke();
             }
         }
     }
@@ -164,6 +172,8 @@ class View {
                 return this.renderAnimeCards(data);
             case 'users':
                 return this.renderUserCards(data);
+            case 'jokes':
+                return this.renderJokeCards(data);
             default:
                 return '';
         }
@@ -222,5 +232,31 @@ class View {
                 </div>
             </div>
         `).join('');
+    }
+
+    renderJokeCards(jokes) {
+        return jokes.map(joke => {
+            let jokeContent = '';
+            if (joke.type === 'single') {
+                jokeContent = `<p>${joke.joke}</p>`;
+            } else if (joke.type === 'twopart') {
+                jokeContent = `
+                    <p><strong>Setup:</strong> ${joke.setup}</p>
+                    <p><strong>Delivery:</strong> ${joke.delivery}</p>
+                `;
+            }
+            
+            return `
+                <div class="card joke-card">
+                    ${jokeContent}
+                    <div class="joke-meta">
+                        <span class="joke-category">${joke.category}</span>
+                        ${joke.flags && joke.flags.nsfw ? '<span class="joke-flag">NSFW</span>' : ''}
+                        ${joke.flags && joke.flags.religious ? '<span class="joke-flag">Religious</span>' : ''}
+                        ${joke.flags && joke.flags.political ? '<span class="joke-flag">Political</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 } 

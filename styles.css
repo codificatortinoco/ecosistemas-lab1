@@ -277,6 +277,55 @@ body {
     display: inline-block;
 }
 
+.joke-card {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 100%;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #ff6b6b;
+}
+
+.joke-card p {
+    font-size: 1rem;
+    color: #2d3748;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.joke-card p strong {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.joke-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.joke-category {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.joke-flag {
+    background: #ff6b6b;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
 
 
 @media (max-width: 768px) {

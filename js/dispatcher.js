@@ -34,4 +34,5 @@ class Dispatcher {
 const dispatcher = new Dispatcher();
 dispatcher.register(action => pokemonStore.handleAction(action));
 dispatcher.register(action => animeStore.handleAction(action));
-dispatcher.register(action => usersStore.handleAction(action)); 
+dispatcher.register(action => usersStore.handleAction(action));
+dispatcher.register(action => jokesStore.handleAction(action)); 

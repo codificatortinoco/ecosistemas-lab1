@@ -18,10 +18,15 @@ class App {
             API: CONFIG.APIs.USERS,
             ACTIONS: CONFIG.ACTIONS.USERS
         });
+        this.actions.jokes = new ApiActions(dispatcher, {
+            API: CONFIG.APIs.JOKES,
+            ACTIONS: CONFIG.ACTIONS.JOKES
+        });
 
         this.views.pokemon = new View('pokemon', pokemonStore, this.actions.pokemon);
         this.views.anime = new View('anime', animeStore, this.actions.anime);
         this.views.users = new View('users', usersStore, this.actions.users);
+        this.views.jokes = new View('jokes', jokesStore, this.actions.jokes);
 
         this.loadInitialData();
     }
